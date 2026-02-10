@@ -1,0 +1,12 @@
+{
+    "name": "quote-app",
+    "private": true,
+    "type": "module",
+    "scripts": {
+      "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+      "install:all": "npm i && npm i --prefix server && npm i --prefix client"
+    },
+    "devDependencies": {
+      "concurrently": "^9.0.0"
+    }
+  }
