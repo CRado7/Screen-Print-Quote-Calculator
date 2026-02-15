@@ -77,3 +77,22 @@ catalogRoutes.get("/product", async (req, res, next) => {
     next(err);
   }
 });
+
+catalogRoutes.get("/style-products", async (req, res, next) => {
+  try {
+    const supplier = String(req.query.supplier || "ss");
+    const styleId = String(req.query.styleId || "").trim();
+
+    if (!styleId) return res.status(400).json({ error: "styleId is required" });
+
+    const svc = suppliers[supplier];
+    if (!svc?.getProductsByStyle) {
+      return res.status(400).json({ error: "Supplier does not support style-products" });
+    }
+
+    const products = await svc.getProductsByStyle({ styleId });
+    res.json(products);
+  } catch (err) {
+    next(err);
+  }
+});

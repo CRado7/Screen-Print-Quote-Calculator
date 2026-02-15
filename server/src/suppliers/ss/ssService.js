@@ -96,4 +96,21 @@ export const ssService = {
 
     return mapSsProductToNormalized(raw);
   },
+
+  /**
+ * GET /v2/products?styleid={styleID}
+ */
+async getProductsByStyle({ styleId }) {
+  const id = String(styleId || "").trim();
+  if (!id) return [];
+
+  // SS API accepts /v2/products/?styleid=39
+  const raw = await ssFetch("products", {
+    query: { styleid: id },
+    debugLabel: `styleID=${id}`,
+  });
+
+  return mapSsSearchToNormalized(raw);
+},
+
 };
