@@ -32,7 +32,8 @@ export default function StyleCard({ style, onPickStyle }) {
         <div className="fw-semibold" style={{ lineHeight: 1.2 }}>
           {title}
         </div>
-        <div className="small text-muted mt-2">{style?.baseCategory}</div>
+        <div className="small text-muted mt-2"></div>
+        <div className="small text-muted mt-2">{style?.styleName}{" | "}{style?.baseCategory}</div>
       </div>
 
       <div className="card-footer bg-transparent border-0 pt-0">
