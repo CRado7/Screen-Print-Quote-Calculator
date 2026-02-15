@@ -7,7 +7,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import App from "./App.jsx";
 import BrandsPage from "./pages/BrandsPage.jsx";
 import BrandProductsPage from "./pages/BrandProductsPage.jsx";
-import ProductPage from "./pages/BrandProductsPage.jsx";
+import ProductPage from "./pages/ProductPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +16,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <BrandsPage /> },
       { path: "brand/:brandId", element: <BrandProductsPage /> },
-      { path: "style/:styleId", element: <ProductPage /> },
+      { path: "product/:productId", element: <ProductPage /> },
     ],
   },
 ]);

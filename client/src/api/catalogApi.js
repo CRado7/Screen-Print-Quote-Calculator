@@ -38,3 +38,16 @@ export async function apiGetStylesByBrand(brandId) {
   const res = await fetch(`/api/catalog/brand-styles?brandId=${encodeURIComponent(brandId)}&supplier=ss`);
   return res.json();
 }
+
+// Fetch all SKUs for a style (used in ProductPage)
+export async function apiGetProductsByStyle(styleId) {
+  const url = new URL(`${API_BASE}/api/catalog/style-products`);
+  url.searchParams.set("supplier", "ss");
+  url.searchParams.set("styleId", styleId);
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load style products");
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : Array.isArray(data.products) ? data.products : [];
+}
