@@ -29,6 +29,7 @@ export default function ProductPage() {
       }
     })();
   }, [productId]);
+  
 
   if (loading) return <div className="text-muted">Loading product…</div>;
   if (error) return <div className="alert alert-danger">{error}</div>;

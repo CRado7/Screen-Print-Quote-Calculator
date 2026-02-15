@@ -72,6 +72,8 @@ export function mapSsProductToNormalized(p) {
 
   const identifier = sku || skuId || gtin || p?.Identifier;
 
+  const brandID = brandName ? brandName.toLowerCase().replace(/\s+/g, "-") : "";
+
   return {
     id: identifier ? `ss-${identifier}` : `ss-unknown-${Math.random()}`,
     supplier: "ss",
@@ -82,6 +84,7 @@ export function mapSsProductToNormalized(p) {
     gtin,
 
     brandName,
+    brandID,
     styleName,
     styleID,
     partNumber,
