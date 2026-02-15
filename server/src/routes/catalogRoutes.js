@@ -1,33 +1,60 @@
-import { Router } from "express";
-import { getSupplierService } from "../../suppliers/index.js";
+import express from "express";
+import { suppliers } from "../suppliers/index.js";
 
-export const catalogRoutes = Router();
+export const catalogRoutes = express.Router();
 
-// GET /api/catalog/search?supplier=ss&q=shirt
-catalogRoutes.get("/search", async (req, res, next) => {
+// GET /api/catalog/brands?supplier=ss
+catalogRoutes.get("/brands", async (req, res, next) => {
   try {
-    const supplier = req.query.supplier || "ss";
-    const q = req.query.q || "";
+    const supplier = String(req.query.supplier || "ss");
+    const svc = suppliers[supplier];
 
-    const svc = getSupplierService(supplier);
-    const results = await svc.searchProducts({ q });
+    if (!svc?.getBrands) {
+      return res.status(400).json({ error: "Supplier does not support brands" });
+    }
 
-    res.json({ results });
+    const brands = await svc.getBrands();
+    res.json(brands);
   } catch (err) {
     next(err);
   }
 });
 
-// GET /api/catalog/products/:productId?supplier=ss
-catalogRoutes.get("/products/:productId", async (req, res, next) => {
+// GET /api/catalog/brand-products?supplier=ss&brand=Bella%20%2B%20Canvas
+catalogRoutes.get("/brand-products", async (req, res, next) => {
   try {
-    const supplier = req.query.supplier || "ss";
-    const { productId } = req.params;
+    const supplier = String(req.query.supplier || "ss");
+    const brandId = String(req.query.brandId || "").trim();
 
-    const svc = getSupplierService(supplier);
-    const product = await svc.getProductById({ productId });
+    const svc = suppliers[supplier];
 
-    res.json({ product });
+    if (!svc?.getProductsByBrandId) {
+      return res
+        .status(400)
+        .json({ error: "Supplier does not support brand-products" });
+    }
+
+    const products = await svc.getProductsByBrandId({ brandId });
+    res.json(products);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/catalog/product?supplier=ss&id=ss-B00760004
+catalogRoutes.get("/product", async (req, res, next) => {
+  try {
+    const supplier = String(req.query.supplier || "ss");
+    const id = String(req.query.id || "").trim();
+
+    const svc = suppliers[supplier];
+
+    if (!svc?.getProductById) {
+      return res.status(400).json({ error: "Supplier does not support product" });
+    }
+
+    const product = await svc.getProductById({ productId: id });
+    res.json(product);
   } catch (err) {
     next(err);
   }
