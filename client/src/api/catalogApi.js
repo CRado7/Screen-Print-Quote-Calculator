@@ -32,3 +32,9 @@ export async function apiGetProduct(id) {
   }
   return res.json();
 }
+
+// NEW: fetch styles by brandID
+export async function apiGetStylesByBrand(brandId) {
+  const res = await fetch(`/api/catalog/brand-styles?brandId=${encodeURIComponent(brandId)}&supplier=ss`);
+  return res.json();
+}

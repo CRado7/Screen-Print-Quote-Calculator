@@ -3,6 +3,7 @@ import {
   mapSsBrandsToNormalized,
   mapSsProductToNormalized,
   mapSsSearchToNormalized,
+  mapSsStylesToNormalized,
 } from "./ssMapper.js";
 
 // Cache brands so we don’t hammer the API
@@ -23,10 +24,6 @@ export const ssService = {
 
     const raw = await ssFetch("Brands", { debugLabel: "getBrands" });
 
-    // console.log("RAW BRANDS RESPONSE TYPE:", typeof raw);
-    // console.log("RAW BRANDS RESPONSE KEYS:", raw && typeof raw === "object" ? Object.keys(raw) : null);
-    // console.log("RAW BRANDS SAMPLE:", Array.isArray(raw) ? raw.slice(0, 3) : raw);
-    
     const normalized = mapSsBrandsToNormalized(raw);
 
     // sort alphabetically
@@ -39,11 +36,7 @@ export const ssService = {
   },
 
   /**
-   * Brand -> products
-   *
-   * We use `style=` as a loose filter.
-   * It may not perfectly match all brands, but it’s the best we have
-   * without a BrandID filter.
+   * GET /v2/products?style={brandName}
    */
   async getProductsByBrandName({ brandName }) {
     const name = String(brandName || "").trim();
@@ -57,6 +50,9 @@ export const ssService = {
     return mapSsSearchToNormalized(raw);
   },
 
+  /**
+   * GET /v2/products?brandID={id}
+   */
   async getProductsByBrandId({ brandId }) {
     const id = String(brandId || "").trim();
     if (!id) return [];
@@ -65,16 +61,27 @@ export const ssService = {
       query: { brandID: id },
       debugLabel: `brandID=${id}`,
     });
-    // console.log("RAW PRODUCTS BY BRAND ID RESPONSE TYPE:", typeof raw);
-    // console.log("RAW PRODUCTS BY BRAND ID RESPONSE KEYS:", raw && typeof raw === "object" ? Object.keys(raw) : null);
-    // console.log("RAW PRODUCTS BY BRAND ID SAMPLE:", Array.isArray(raw) ? raw.slice(0, 3) : raw);
 
     return mapSsSearchToNormalized(raw);
   },
 
   /**
-   * Product details
-   * /v2/products/{identifier}
+   * GET /v2/styles?brandID={id}
+   */
+  async getStylesByBrandId({ brandId }) {
+    const id = String(brandId || "").trim();
+    if (!id) return [];
+
+    const raw = await ssFetch("styles", {
+      query: { brandID: id },
+      debugLabel: `styles brandID=${id}`,
+    });
+
+    return mapSsStylesToNormalized(raw);
+  },
+
+  /**
+   * GET /v2/products/{identifier}
    */
   async getProductById({ productId }) {
     const cleanId = String(productId || "")

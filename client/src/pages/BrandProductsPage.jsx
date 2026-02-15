@@ -1,44 +1,47 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiGetProductsByBrand } from "../api/catalogApi";
-import ProductGrid from "../components/ProductGrid.jsx"; // external grid
+import { apiGetStylesByBrand } from "../api/catalogApi"; // backend endpoint
+import StyleGrid from "../components/StyleGrid.jsx";
 
 export default function BrandProductsPage() {
-  const { brandId } = useParams();
+  const { brandId } = useParams(); // URL-friendly brandID
   const decodedBrandId = decodeURIComponent(brandId || "");
 
   const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState([]);
+  const [styles, setStyles] = useState([]);
   const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch products by brand
   useEffect(() => {
     (async () => {
       try {
         setError("");
         setLoading(true);
 
-        const data = await apiGetProductsByBrand(decodedBrandId);
+        // fetch styles from backend for this brand
+        const data = await apiGetStylesByBrand(decodedBrandId);
+        const normalized = Array.isArray(data) ? data : [];
 
-        // Defensive: guarantee array
-        setProducts(Array.isArray(data) ? data : []);
+        // filter only styles that match the clicked brandID
+        const brandStyles = normalized.filter(
+          (s) => s.brandID === decodedBrandId
+        );
+
+        setStyles(brandStyles);
       } catch (e) {
-        setError(e?.message || "Failed to load products");
+        setError(e?.message || "Failed to load styles");
       } finally {
         setLoading(false);
       }
     })();
   }, [decodedBrandId]);
 
-  // Navigate to product page
-  function pickProduct(style) {
+  const pickStyle = (style) => {
     navigate(`/style/${encodeURIComponent(style.styleID)}`);
-  }  
+  };
 
-  const brandName = products?.[0]?.brandName || decodedBrandId;
+  const brandDisplayName = styles?.[0]?.brandName ?? decodedBrandId;
 
   return (
     <div>
@@ -46,7 +49,6 @@ export default function BrandProductsPage() {
         <Link to="/" className="btn btn-outline-secondary">
           ← Back to Brands
         </Link>
-
         {loading && <span className="text-muted">Loading…</span>}
       </div>
 
@@ -56,14 +58,14 @@ export default function BrandProductsPage() {
         <div className="card-body">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-              <h5 className="m-0">{brandName || "(missing)"}</h5>
-              <div className="text-muted small">{products.length} products</div>
+              <h5 className="m-0">{brandDisplayName}</h5>
+              <div className="text-muted small">{styles.length} styles</div>
             </div>
 
             <input
               className="form-control"
               style={{ maxWidth: 360 }}
-              placeholder="Filter products (title, part #, styleID…)"
+              placeholder="Filter styles (title, part #, styleID…)"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
@@ -72,12 +74,12 @@ export default function BrandProductsPage() {
           <hr className="my-3" />
 
           {loading ? (
-            <div className="text-muted">Loading products…</div>
+            <div className="text-muted">Loading styles…</div>
           ) : (
-            <ProductGrid
-              products={products}
+            <StyleGrid
+              styles={styles}
               filter={filter}
-              onPickProduct={pickProduct} // ensures ProductCard gets correct callback
+              onPickStyle={pickStyle}
             />
           )}
         </div>
@@ -85,4 +87,3 @@ export default function BrandProductsPage() {
     </div>
   );
 }
-

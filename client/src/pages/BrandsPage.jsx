@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiGetBrands } from "../api/catalogApi";
+import { apiGetBrands } from "../api/catalogApi"; // your API call
 import BrandGrid from "../components/BrandGrid";
 
 export default function BrandsPage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState([]);
   const [brandFilter, setBrandFilter] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -15,8 +15,10 @@ export default function BrandsPage() {
       try {
         setError("");
         setLoading(true);
+
         const data = await apiGetBrands();
-        setBrands(data);
+        // backend is assumed to send already normalized data with brandID
+        setBrands(Array.isArray(data) ? data : []);
       } catch (e) {
         setError(e?.message || "Failed to load brands");
       } finally {
@@ -25,8 +27,9 @@ export default function BrandsPage() {
     })();
   }, []);
 
-  function pickBrand(b) {
-    navigate(`/brand/${encodeURIComponent(b.brandId)}`);
+  function pickBrand(brand) {
+    // navigate to BrandProductsPage using brandID
+    navigate(`/brand/${brand.brandID}`);
   }
 
   return (

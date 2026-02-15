@@ -41,6 +41,24 @@ catalogRoutes.get("/brand-products", async (req, res, next) => {
   }
 });
 
+catalogRoutes.get("/brand-styles", async (req, res, next) => {
+  try {
+    const supplier = String(req.query.supplier || "ss");
+    const brandId = String(req.query.brandId || "").trim();
+
+    const svc = suppliers[supplier];
+
+    if (!svc?.getStylesByBrandId) {
+      return res.status(400).json({ error: "Supplier does not support brand-styles" });
+    }
+
+    const styles = await svc.getStylesByBrandId({ brandId });
+    res.json(styles);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/catalog/product?supplier=ss&id=ss-B00760004
 catalogRoutes.get("/product", async (req, res, next) => {
   try {
