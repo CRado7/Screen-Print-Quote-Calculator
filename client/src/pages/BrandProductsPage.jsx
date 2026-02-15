@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiGetStylesByBrand } from "../api/catalogApi";
+import { apiGetStylesByBrand } from "../api/catalogApi"; // backend endpoint
 import StyleGrid from "../components/StyleGrid.jsx";
 
 export default function BrandProductsPage() {
-  const { brandId } = useParams();
+  const { brandId } = useParams(); // URL-friendly brandID
   const decodedBrandId = decodeURIComponent(brandId || "");
-  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const [styles, setStyles] = useState([]);
   const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -19,8 +19,16 @@ export default function BrandProductsPage() {
         setError("");
         setLoading(true);
 
+        // fetch styles from backend for this brand
         const data = await apiGetStylesByBrand(decodedBrandId);
-        setStyles(Array.isArray(data) ? data : []);
+        const normalized = Array.isArray(data) ? data : [];
+
+        // filter only styles that match the clicked brandID
+        const brandStyles = normalized.filter(
+          (s) => s.brandID === decodedBrandId
+        );
+
+        setStyles(brandStyles);
       } catch (e) {
         setError(e?.message || "Failed to load styles");
       } finally {
@@ -28,14 +36,12 @@ export default function BrandProductsPage() {
       }
     })();
   }, [decodedBrandId]);
-
-  // Navigate to product page
   const pickStyle = (style) => {
     // use styleID or partNumber for URL
     navigate(`/product/${encodeURIComponent(style.styleID)}`);
-  };  
+  }; 
 
-  const brandName = styles?.[0]?.brandName || decodedBrandId;
+  const brandDisplayName = styles?.[0]?.brandName ?? decodedBrandId;
 
   return (
     <div>
@@ -52,7 +58,7 @@ export default function BrandProductsPage() {
         <div className="card-body">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-              <h5 className="m-0">{brandName || "(missing)"}</h5>
+              <h5 className="m-0">{brandDisplayName}</h5>
               <div className="text-muted small">{styles.length} styles</div>
             </div>
 
@@ -81,3 +87,4 @@ export default function BrandProductsPage() {
     </div>
   );
 }
+
