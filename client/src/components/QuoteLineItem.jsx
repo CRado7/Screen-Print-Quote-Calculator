@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+import { useMemo, useState } from "react";
+import { Button, Card, Col, Form, Row, Table, Image } from "react-bootstrap";
 
 import { useQuoteStore } from "../store/quoteStore.js";
 import { getLineItemTotals } from "../utils/quoteMath.js";
@@ -7,32 +7,189 @@ import { toMoney } from "../utils/money.js";
 
 import AdjustersEditor from "./AdjustersEditor.jsx";
 
-export default function QuoteLineItem({ lineItem }) {
+export default function QuoteLineItem({ quoteId, lineItem }) {
   const removeLineItem = useQuoteStore((s) => s.removeLineItem);
   const updateLineItem = useQuoteStore((s) => s.updateLineItem);
 
-  const totals = useMemo(() => getLineItemTotals(lineItem), [lineItem]);
+  // --- Edit state ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftSizeQty, setDraftSizeQty] = useState({ ...lineItem.sizeQty });
+  const [draftMarkup, setDraftMarkup] = useState(lineItem.markupPerItem ?? 0);
+  const [draftMarkupType, setDraftMarkupType] = useState(lineItem.markupType || "dollar");
 
-  const sizes = Object.keys(lineItem.sizeQty || {});
+  const [newSize, setNewSize] = useState("");
+  const [newQty, setNewQty] = useState(0);
+
+  const availableSizes = lineItem.availableSizes || [];
+  const skuMeta = lineItem.skuMetaBySize || {};
+
+  // --- Handlers ---
+  function handleQtyChange(size, value) {
+    setDraftSizeQty((prev) => ({ ...prev, [size]: Number(value || 0) }));
+  }
+
+  function handleAddSize() {
+    const size = newSize.trim().toUpperCase();
+    const qty = Number(newQty);
+
+    if (!size) return alert("Please enter a size.");
+    if (!availableSizes.includes(size)) return alert("This size is not available for this product.");
+    if (draftSizeQty[size]) return alert("Size already added.");
+    if (qty <= 0) return alert("Quantity must be greater than zero.");
+
+    setDraftSizeQty((prev) => ({ ...prev, [size]: qty }));
+    setNewSize("");
+    setNewQty(0);
+  }
+
+  function handleSave() {
+    const updatedCostBySize = { ...lineItem.costBySize };
+    const updatedSkuBySize = { ...lineItem.skuBySize };
+    const updatedGtinBySize = { ...lineItem.gtinBySize };
+
+    Object.keys(draftSizeQty).forEach((size) => {
+      if (!updatedCostBySize[size] && skuMeta[size]) {
+        updatedCostBySize[size] = skuMeta[size].unitCost || 0;
+        updatedSkuBySize[size] = skuMeta[size].sku || "";
+        updatedGtinBySize[size] = skuMeta[size].gtin || "";
+      }
+    });
+
+    updateLineItem(quoteId, lineItem.id, {
+      sizeQty: draftSizeQty,
+      markupPerItem: draftMarkup,
+      markupType: draftMarkupType,
+      costBySize: updatedCostBySize,
+      skuBySize: updatedSkuBySize,
+      gtinBySize: updatedGtinBySize,
+    });
+
+    setIsEditing(false);
+  }
+
+  function handleCancel() {
+    setDraftSizeQty({ ...lineItem.sizeQty });
+    setDraftMarkup(lineItem.markupPerItem ?? 0);
+    setDraftMarkupType(lineItem.markupType || "dollar");
+    setIsEditing(false);
+    setNewSize("");
+    setNewQty(0);
+  }
+
+  // --- Dynamic totals while editing ---
+  const dynamicTotals = useMemo(() => {
+    const costBySize = { ...lineItem.costBySize };
+    Object.keys(draftSizeQty).forEach((size) => {
+      if (!costBySize[size] && skuMeta[size]) {
+        costBySize[size] = skuMeta[size].unitCost || 0;
+      }
+    });
+
+    let sellTotal = 0;
+    let profit = 0;
+    Object.keys(draftSizeQty).forEach((size) => {
+      const qty = draftSizeQty[size] || 0;
+      const unitCost = costBySize[size] || 0;
+      let unitSell = unitCost;
+
+      if (draftMarkupType === "dollar") unitSell += draftMarkup;
+      else unitSell *= 1 + draftMarkup / 100;
+
+      sellTotal += unitSell * qty;
+      profit += (unitSell - unitCost) * qty;
+    });
+
+    return { sellTotal, profit };
+  }, [draftSizeQty, draftMarkup, draftMarkupType, skuMeta, lineItem.costBySize]);
+
+  // --- Sorted sizes for display ---
+    const sizeOrder = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
+
+    const sortedSizes = Object.keys(draftSizeQty).sort(
+      (a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)
+    );
 
   return (
-    <Card>
+    <Card className="mb-3">
       <Card.Body>
-        <div className="d-flex align-items-start justify-content-between gap-3">
-          <div>
-            <div className="fw-semibold">{lineItem.title}</div>
-            <div className="text-muted" style={{ fontSize: 13 }}>
-              {lineItem.brand ? `${lineItem.brand} • ` : ""}
-              {lineItem.styleNumber} • {lineItem.color}
+        {/* --- Image + Title --- */}
+        <div className="d-flex align-items-start gap-3">
+          {lineItem.image && (
+            <Image
+              src={lineItem.image}
+              alt={lineItem.title}
+              width={80}
+              height={80}
+              style={{ objectFit: "contain" }}
+              rounded
+            />
+          )}
+          <div className="flex-grow-1">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <div className="fw-semibold">{lineItem.title}</div>
+                <div className="text-muted" style={{ fontSize: 13 }}>
+                  {lineItem.brand ? `${lineItem.brand} • ` : ""}
+                  {lineItem.styleNumber} • {lineItem.color}
+                </div>
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  SKU: {lineItem.sku || "—"} • GTIN: {lineItem.gtin || "—"}
+                </div>
+              </div>
+
+              <div className="d-flex gap-2">
+                {!isEditing ? (
+                  <Button variant="outline-primary" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+                ) : (
+                  <>
+                    <Button variant="success" size="sm" onClick={handleSave}>Save</Button>
+                    <Button variant="secondary" size="sm" onClick={handleCancel}>Cancel</Button>
+                  </>
+                )}
+                <Button variant="outline-danger" size="sm" onClick={() => removeLineItem(quoteId, lineItem.id)}>Remove</Button>
+              </div>
             </div>
           </div>
-          <Button variant="outline-danger" size="sm" onClick={() => removeLineItem(lineItem.id)}>
-            Remove
-          </Button>
         </div>
 
+        {/* --- Markup Editor --- */}
         <Row className="g-3 pt-3">
-          <Col md={6}>
+          <Col md={12}>
+            <Form.Label>Markup per item</Form.Label>
+            <div className="d-flex gap-2 mb-3 align-items-center">
+              <Form.Select
+                value={draftMarkupType}
+                onChange={(e) => setDraftMarkupType(e.target.value)}
+                style={{ maxWidth: 100 }}
+                disabled={!isEditing}
+              >
+                <option value="dollar">Dollar</option>
+                <option value="percent">Percent</option>
+              </Form.Select>
+
+              <Form.Control
+                type="number"
+                step={draftMarkupType === "dollar" ? 0.01 : 1}
+                value={draftMarkup}
+                onChange={(e) => setDraftMarkup(Number(e.target.value || 0))}
+                disabled={!isEditing}
+              />
+              <span>{draftMarkupType === "percent" ? "%" : "$"}</span>
+
+              <div className="ms-auto text-end">
+                <div className="fw-semibold">Line Total</div>
+                <div style={{ fontSize: 20 }} className="fw-bold">
+                  {toMoney(dynamicTotals.sellTotal)}
+                </div>
+                <div className="text-muted" style={{ fontSize: 13 }}>
+                  Internal profit: {toMoney(dynamicTotals.profit)}
+                </div>
+              </div>
+            </div>
+          </Col>
+
+          {/* --- Editable Sizes --- */}
+          <Col md={12}>
             <div className="fw-semibold mb-2">Sizes</div>
             <Table bordered size="sm" className="mb-0">
               <thead>
@@ -42,46 +199,63 @@ export default function QuoteLineItem({ lineItem }) {
                 </tr>
               </thead>
               <tbody>
-                {sizes.map((s) => (
+                {sortedSizes.map((s) => (
                   <tr key={s}>
                     <td>{s}</td>
-                    <td className="text-end">{lineItem.sizeQty[s]}</td>
+                    <td className="text-end">
+                      {isEditing ? (
+                        <Form.Control
+                          type="number"
+                          min={0}
+                          value={draftSizeQty[s]}
+                          onChange={(e) => handleQtyChange(s, e.target.value)}
+                          style={{ width: 80, marginLeft: "auto" }}
+                        />
+                      ) : (
+                        draftSizeQty[s]
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </Table>
-          </Col>
 
-          <Col md={6}>
-            <Row className="g-2">
-              <Col sm={6}>
-                <Form.Label>Markup per item ($)</Form.Label>
+            {isEditing && (
+              <div className="d-flex gap-2 mt-2 align-items-center flex-wrap">
+                <Form.Select
+                  value={newSize}
+                  onChange={(e) => setNewSize(e.target.value)}
+                  style={{ maxWidth: 200 }}
+                >
+                  <option value="">Add a size...</option>
+                  {availableSizes.filter((s) => !draftSizeQty[s]).map((s) => (
+                    <option key={s} value={s}>
+                      {s} • {toMoney(skuMeta[s]?.unitCost || 0)}
+                    </option>
+                  ))}
+                </Form.Select>
+
                 <Form.Control
                   type="number"
-                  step="0.01"
-                  value={lineItem.markupPerItem ?? 0}
-                  onChange={(e) =>
-                    updateLineItem(lineItem.id, { markupPerItem: Number(e.target.value || 0) })
-                  }
+                  min={0}
+                  value={newQty}
+                  onChange={(e) => setNewQty(e.target.value)}
+                  style={{ maxWidth: 80 }}
                 />
-              </Col>
-              <Col sm={6}>
-                <div className="fw-semibold">Line Total</div>
-                <div style={{ fontSize: 20 }} className="fw-bold">
-                  {toMoney(totals.sellTotal)}
-                </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Internal profit: {toMoney(totals.profit)}
-                </div>
-              </Col>
-            </Row>
 
-            <div className="pt-3">
-              <AdjustersEditor
-                adjusters={lineItem.adjusters || []}
-                onChange={(adjusters) => updateLineItem(lineItem.id, { adjusters })}
-              />
-            </div>
+                <Button variant="success" size="sm" onClick={handleAddSize}>Add Size</Button>
+              </div>
+            )}
+          </Col>
+
+          {/* --- Adjusters --- */}
+          <Col md={12} className="pt-3">
+            <AdjustersEditor
+              adjusters={lineItem.adjusters || []}
+              onChange={(adjusters) =>
+                updateLineItem(quoteId, lineItem.id, { adjusters })
+              }
+            />
           </Col>
         </Row>
       </Card.Body>

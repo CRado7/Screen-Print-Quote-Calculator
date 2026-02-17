@@ -8,6 +8,8 @@ import App from "./App.jsx";
 import BrandsPage from "./pages/BrandsPage.jsx";
 import BrandProductsPage from "./pages/BrandProductsPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
+import QuotesPage from "./pages/QuotesPage.jsx";
+import QuoteEditorPage from "./pages/QuoteEditorPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +19,8 @@ const router = createBrowserRouter([
       { index: true, element: <BrandsPage /> },
       { path: "brand/:brandId", element: <BrandProductsPage /> },
       { path: "product/:productId", element: <ProductPage /> },
+      { path: "quotes", element: <QuotesPage /> },
+      { path: "quote/:quoteId", element: <QuoteEditorPage /> },
     ],
   },
 ]);
