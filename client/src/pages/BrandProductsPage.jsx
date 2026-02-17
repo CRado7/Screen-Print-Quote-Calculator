@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiGetStylesByBrand } from "../api/catalogApi"; // backend endpoint
+import { apiGetStylesByBrand } from "../api/catalogApi"; 
 import StyleGrid from "../components/StyleGrid.jsx";
 
 export default function BrandProductsPage() {
-  const { brandId } = useParams(); // URL-friendly brandID
+  const { brandId } = useParams();
   const decodedBrandId = decodeURIComponent(brandId || "");
-
   const navigate = useNavigate();
+
   const [styles, setStyles] = useState([]);
   const [filter, setFilter] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -19,11 +20,9 @@ export default function BrandProductsPage() {
         setError("");
         setLoading(true);
 
-        // fetch styles from backend for this brand
         const data = await apiGetStylesByBrand(decodedBrandId);
         const normalized = Array.isArray(data) ? data : [];
 
-        // filter only styles that match the clicked brandID
         const brandStyles = normalized.filter(
           (s) => s.brandID === decodedBrandId
         );
@@ -36,10 +35,38 @@ export default function BrandProductsPage() {
       }
     })();
   }, [decodedBrandId]);
+
   const pickStyle = (style) => {
-    // use styleID or partNumber for URL
     navigate(`/product/${encodeURIComponent(style.styleID)}`);
-  }; 
+  };
+
+  // --- Count styles per baseCategory ---
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    styles.forEach((s) => {
+      if (!s.baseCategory) return;
+      counts[s.baseCategory] = (counts[s.baseCategory] || 0) + 1;
+    });
+    return counts;
+  }, [styles]);
+
+  const baseCategories = useMemo(() => Object.keys(categoryCounts), [categoryCounts]);
+
+  // --- Filtered styles ---
+  const filteredStyles = useMemo(() => {
+    return styles.filter((s) => {
+      const matchesCategory = selectedCategory
+        ? s.baseCategory === selectedCategory
+        : true;
+
+      const matchesSearch = filter
+        ? [s.title, s.styleName, s.styleID, s.partNumber]
+            .some((v) => v.toLowerCase().includes(filter.toLowerCase()))
+        : true;
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [styles, selectedCategory, filter]);
 
   const brandDisplayName = styles?.[0]?.brandName ?? decodedBrandId;
 
@@ -62,13 +89,30 @@ export default function BrandProductsPage() {
               <div className="text-muted small">{styles.length} styles</div>
             </div>
 
-            <input
-              className="form-control"
-              style={{ maxWidth: 360 }}
-              placeholder="Filter styles (title, part #, styleID…)"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            />
+            {/* --- Search + Category Filter --- */}
+            <div className="d-flex gap-2 flex-wrap">
+              <input
+                className="form-control"
+                style={{ maxWidth: 200 }}
+                placeholder="Search styles (title, part #, styleID…)"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+
+              <select
+                className="form-select"
+                style={{ maxWidth: 220 }}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">All Categories</option>
+                {baseCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat} ({categoryCounts[cat]})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <hr className="my-3" />
@@ -77,7 +121,7 @@ export default function BrandProductsPage() {
             <div className="text-muted">Loading styles…</div>
           ) : (
             <StyleGrid
-              styles={styles}
+              styles={filteredStyles}
               filter={filter}
               onPickStyle={pickStyle}
             />
@@ -87,4 +131,3 @@ export default function BrandProductsPage() {
     </div>
   );
 }
-

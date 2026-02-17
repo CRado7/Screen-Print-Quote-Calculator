@@ -113,4 +113,20 @@ async getProductsByStyle({ styleId }) {
   return mapSsSearchToNormalized(raw);
 },
 
+/**
+ * GET /v2/products?baseCategory={category}
+ */
+
+async getProductsByBaseCategory({ baseCategory }) {
+  const category = String(baseCategory || "").trim();
+  if (!category) return [];
+
+  const raw = await ssFetch("products", {
+    query: { baseCategory: category },
+    debugLabel: `baseCategory=${category}`,
+  });
+
+  return mapSsSearchToNormalized(raw);
+}
+
 };
