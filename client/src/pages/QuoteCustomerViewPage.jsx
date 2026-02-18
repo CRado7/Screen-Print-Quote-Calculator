@@ -92,6 +92,7 @@ export default function QuoteCustomerViewPage() {
   const quoteStatus = response?.status || "pending";
   const statusColor = quoteStatus === "approved" ? "success" :
                       quoteStatus === "rejected" ? "danger" :
+                      quoteStatus === "pending" ? "warning" :
                       "primary";
 
   return (
