@@ -7,7 +7,6 @@ import QuoteLineItem from "../components/QuoteLineItem.jsx";
 import SendQuoteModal from "../components/SendQuoteModal.jsx";
 import { getQuoteTotalsAdjusted } from "../utils/quotePricing.js";
 import { toMoney } from "../utils/money.js";
-
 import { exportQuotePdf } from "../utils/exportQuotePDF.jsx";
 
 export default function QuoteEditorPage() {
@@ -26,7 +25,6 @@ export default function QuoteEditorPage() {
     () => getQuoteTotalsAdjusted(quote?.lineItems || []),
     [quote]
   );
-  
 
   if (!quote) {
     return (
@@ -67,7 +65,10 @@ export default function QuoteEditorPage() {
       </div>
 
       <Row className="g-3">
-        <Col lg={4}>
+        <Col
+          lg={4}
+          style={{ position: "sticky", top: "20px", alignSelf: "start" }}
+        >
           <Card>
             <Card.Body>
               <Form.Label>Quote Name</Form.Label>
@@ -148,9 +149,13 @@ export default function QuoteEditorPage() {
               <hr />
 
               <div className="d-grid gap-2">
-                <Button variant="primary"  onClick={() => exportQuotePdf(quote)}>
+                <Button
+                  variant="primary"
+                  onClick={() => exportQuotePdf(quote)}
+                >
                   Export As PDF
                 </Button>
+
                 <Button
                   variant="outline-primary"
                   onClick={() => setShowSendModal(true)}
@@ -168,16 +173,18 @@ export default function QuoteEditorPage() {
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          quote,
-                          toEmail,
-                          subject,
-                          message,
-                        }),
+                        body: JSON.stringify({ quote, toEmail, subject, message }),
                       }
                     );
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || "Failed to send email");
+
+                    // ✅ Update quote in store immediately
+                    updateQuote(quote.id, {
+                      status: "pending",
+                      shareToken: data.token,
+                    });
+
                     return data;
                   }}
                 />
@@ -193,9 +200,7 @@ export default function QuoteEditorPage() {
             ))}
 
             {!quote.lineItems.length && (
-              <div className="text-muted">
-                No line items yet. Go add products.
-              </div>
+              <div className="text-muted">No line items yet. Go add products.</div>
             )}
           </div>
         </Col>

@@ -2,14 +2,17 @@ import { create } from "zustand";
 
 const LS_KEY = "quotes_v1";
 
+// Generate a simple unique ID
 function uid() {
   return Math.random().toString(16).slice(2);
 }
 
+// Current timestamp
 function now() {
   return Date.now();
 }
 
+// Load quotes from localStorage
 function loadQuotesFromStorage() {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -21,11 +24,12 @@ function loadQuotesFromStorage() {
   }
 }
 
+// Save quotes to localStorage
 function saveQuotesToStorage(quotes) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(quotes));
   } catch {
-    // ignore
+    // ignore errors
   }
 }
 
@@ -39,7 +43,9 @@ export const useQuoteStore = create((set, get) => ({
 
     // Limit to 3 quotes
     if (currentQuotes.length >= 3) {
-      alert("You have reached the maximum of 3 quotes. Please delete an existing quote first.");
+      alert(
+        "You have reached the maximum of 3 quotes. Please delete an existing quote first."
+      );
       return null;
     }
 
@@ -50,6 +56,7 @@ export const useQuoteStore = create((set, get) => ({
       name: patch.name || "Untitled Quote",
       createdAt: now(),
       updatedAt: now(),
+      status: patch.status || "draft", // default draft
       customer: {
         name: "",
         email: "",
@@ -59,6 +66,8 @@ export const useQuoteStore = create((set, get) => ({
       },
       notes: patch.notes || "",
       lineItems: [],
+      shareToken: patch.shareToken || null, // for shared quote links
+      responses: patch.responses || [], // array of { status, notes, date }
     };
 
     set((state) => {
@@ -84,6 +93,7 @@ export const useQuoteStore = create((set, get) => ({
 
   setActiveQuote: (quoteId) => set({ activeQuoteId: quoteId }),
 
+  // Update any fields in quote
   updateQuote: (quoteId, patch) => {
     set((state) => {
       const quotes = state.quotes.map((q) =>
@@ -96,18 +106,35 @@ export const useQuoteStore = create((set, get) => ({
     });
   },
 
-  // ---------- LINE ITEM CRUD ----------
-  addLineItemToQuote: (quoteId, item) => {
-    console.log("ADDING ITEM TO QUOTE:", item);
-console.log("ADDING skuMetaBySize:", item?.skuMetaBySize);
-console.log("ADDING skuMetaBySize keys:", Object.keys(item?.skuMetaBySize || {}));
-    const lineId = `line_${uid()}`;
-
-
+  // Add a response (approve/reject) to a quote
+  addResponse: (quoteId, { status, notes = "" }) => {
     set((state) => {
       const quotes = state.quotes.map((q) => {
         if (q.id !== quoteId) return q;
 
+        const newResponse = { status, notes, date: now() };
+        const updatedResponses = [...(q.responses || []), newResponse];
+
+        return {
+          ...q,
+          responses: updatedResponses,
+          status, // keep latest status
+          updatedAt: now(),
+        };
+      });
+
+      saveQuotesToStorage(quotes);
+      return { quotes };
+    });
+  },
+
+  // ---------- LINE ITEM CRUD ----------
+  addLineItemToQuote: (quoteId, item) => {
+    const lineId = `line_${uid()}`;
+
+    set((state) => {
+      const quotes = state.quotes.map((q) => {
+        if (q.id !== quoteId) return q;
         return {
           ...q,
           updatedAt: now(),
