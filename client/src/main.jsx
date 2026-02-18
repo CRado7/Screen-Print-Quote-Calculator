@@ -10,6 +10,8 @@ import BrandProductsPage from "./pages/BrandProductsPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
 import QuotesPage from "./pages/QuotesPage.jsx";
 import QuoteEditorPage from "./pages/QuoteEditorPage.jsx";
+import QuoteCustomerViewPage from "./pages/QuoteCustomerViewPage.jsx";
+
 
 const router = createBrowserRouter([
   {
@@ -21,6 +23,8 @@ const router = createBrowserRouter([
       { path: "product/:productId", element: <ProductPage /> },
       { path: "quotes", element: <QuotesPage /> },
       { path: "quote/:quoteId", element: <QuoteEditorPage /> },
+      { path: "q/view/:token", element: <QuoteCustomerViewPage /> },
+
     ],
   },
 ]);

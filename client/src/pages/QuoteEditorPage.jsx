@@ -1,15 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Card, Col, Form, Row } from "react-bootstrap";
 
 import { useQuoteStore } from "../store/quoteStore.js";
 import QuoteLineItem from "../components/QuoteLineItem.jsx";
+import SendQuoteModal from "../components/SendQuoteModal.jsx";
 import { getQuoteTotalsAdjusted } from "../utils/quotePricing.js";
 import { toMoney } from "../utils/money.js";
 
 import { exportQuotePdf } from "../utils/exportQuotePDF.jsx";
 
 export default function QuoteEditorPage() {
+  const [showSendModal, setShowSendModal] = useState(false);
+
   const { quoteId } = useParams();
   const navigate = useNavigate();
 
@@ -148,9 +151,36 @@ export default function QuoteEditorPage() {
                 <Button variant="primary"  onClick={() => exportQuotePdf(quote)}>
                   Export As PDF
                 </Button>
-                <Button variant="outline-primary" disabled>
-                  Send Email (next)
+                <Button
+                  variant="outline-primary"
+                  onClick={() => setShowSendModal(true)}
+                >
+                  Send Email
                 </Button>
+
+                <SendQuoteModal
+                  show={showSendModal}
+                  onHide={() => setShowSendModal(false)}
+                  quote={quote}
+                  onSend={async ({ toEmail, subject, message }) => {
+                    const res = await fetch(
+                      `http://localhost:5050/api/quote/${quote.id}/send-email`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          quote,
+                          toEmail,
+                          subject,
+                          message,
+                        }),
+                      }
+                    );
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed to send email");
+                    return data;
+                  }}
+                />
               </div>
             </Card.Body>
           </Card>
