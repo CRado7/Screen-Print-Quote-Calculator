@@ -4,8 +4,10 @@ import { Button, Card, Col, Form, Row } from "react-bootstrap";
 
 import { useQuoteStore } from "../store/quoteStore.js";
 import QuoteLineItem from "../components/QuoteLineItem.jsx";
-import { getQuoteTotals } from "../utils/quoteMath.js";
+import { getQuoteTotalsAdjusted } from "../utils/quotePricing.js";
 import { toMoney } from "../utils/money.js";
+
+import { exportQuotePdf } from "../utils/exportQuotePDF.jsx";
 
 export default function QuoteEditorPage() {
   const { quoteId } = useParams();
@@ -17,7 +19,11 @@ export default function QuoteEditorPage() {
 
   const quote = quotes.find((q) => q.id === quoteId);
 
-  const totals = useMemo(() => getQuoteTotals(quote?.lineItems || []), [quote]);
+  const totals = useMemo(
+    () => getQuoteTotalsAdjusted(quote?.lineItems || []),
+    [quote]
+  );
+  
 
   if (!quote) {
     return (
@@ -139,8 +145,8 @@ export default function QuoteEditorPage() {
               <hr />
 
               <div className="d-grid gap-2">
-                <Button variant="primary" disabled>
-                  Export PDF (next)
+                <Button variant="primary"  onClick={() => exportQuotePdf(quote)}>
+                  Export As PDF
                 </Button>
                 <Button variant="outline-primary" disabled>
                   Send Email (next)
