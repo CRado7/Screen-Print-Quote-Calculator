@@ -5,7 +5,7 @@ export default function App() {
     <div className="container py-4" style={{ maxWidth: 1100 }}>
       <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap">
         <div>
-          <h3 className="mb-1">S&S Catalog (Brands → Products)</h3>
+          <h3 className="mb-1">Ink Hive Quote Generator</h3>
           <div className="text-muted">
             Load brands instantly, filter locally, then browse products.
           </div>

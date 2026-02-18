@@ -124,7 +124,7 @@ export function mapSsStyleToNormalized(s) {
 
   const identifier = styleID || partNumber || `${brandName}-${styleName}`;
 
-  console.log("Mapping Raw Style:", s);
+  // console.log("Mapping Raw Style:", s);
 
   return {
     id: `ss-style-${identifier}`,
