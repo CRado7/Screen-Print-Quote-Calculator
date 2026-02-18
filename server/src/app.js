@@ -6,6 +6,7 @@ import morgan from "morgan";
 dotenv.config();
 
 import { catalogRoutes } from "./routes/catalogRoutes.js";
+import quoteShareRoutes from "./routes/quoteShareRoutes.js";
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,8 @@ export function createApp() {
   app.get("/api/health", (req, res) => res.json({ ok: true }));
 
   app.use("/api/catalog", catalogRoutes);
+
+  app.use("/api", quoteShareRoutes);
 
   app.use((err, req, res, next) => {
     console.error(err);

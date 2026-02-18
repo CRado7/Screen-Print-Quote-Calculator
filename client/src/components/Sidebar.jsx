@@ -66,7 +66,7 @@ export default function Sidebar() {
           zIndex: 999,
           transform: isMobile
             ? collapsed
-              ? "translateX(-100%)"
+              ? "translateX(0%)"
               : "translateX(0)"
             : "translateX(0)",
         }}
