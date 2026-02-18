@@ -71,6 +71,8 @@ export default function QuotesPage() {
                       ? "success"
                       : q.status === "rejected"
                       ? "danger"
+                      : q.status === "pending"
+                      ? "warning"
                       : "primary";
 
                   return (
@@ -189,6 +191,8 @@ export default function QuotesPage() {
                                             ? "success"
                                             : r.status === "rejected"
                                             ? "danger"
+                                            : r.status === "pending"
+                                            ? "warning"
                                             : "primary"
                                         }
                                         pill

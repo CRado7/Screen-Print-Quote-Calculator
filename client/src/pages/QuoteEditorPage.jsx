@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Card, Col, Form, Row } from "react-bootstrap";
+import { Button, Card, Col, Form, Row, Badge } from "react-bootstrap";
 
 import { useQuoteStore } from "../store/quoteStore.js";
 import QuoteLineItem from "../components/QuoteLineItem.jsx";
@@ -20,7 +20,6 @@ export default function QuoteEditorPage() {
   const deleteQuote = useQuoteStore((s) => s.deleteQuote);
 
   const quote = quotes.find((q) => q.id === quoteId);
-
   const totals = useMemo(
     () => getQuoteTotalsAdjusted(quote?.lineItems || []),
     [quote]
@@ -37,11 +36,26 @@ export default function QuoteEditorPage() {
     );
   }
 
+  // Determine status color
+  const statusColor =
+    quote.status === "approved"
+      ? "success"
+      : quote.status === "rejected"
+      ? "danger"
+      : quote.status === "pending"
+      ? "warning"
+      : "primary";
+
   return (
     <div className="container py-4">
       <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
         <div>
-          <h3 className="mb-1">{quote.name}</h3>
+          <h3 className="mb-1">
+            {quote.name}{" "}
+            <Badge bg={statusColor} pill style={{ fontSize: "0.8rem" }}>
+              {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+            </Badge>
+          </h3>
           <div className="text-muted" style={{ fontSize: 13 }}>
             {quote.lineItems.length} items • {totals.totalQty} units
           </div>
@@ -152,6 +166,7 @@ export default function QuoteEditorPage() {
                 <Button
                   variant="primary"
                   onClick={() => exportQuotePdf(quote)}
+                  disabled={quote.lineItems.length === 0}
                 >
                   Export As PDF
                 </Button>
@@ -159,6 +174,7 @@ export default function QuoteEditorPage() {
                 <Button
                   variant="outline-primary"
                   onClick={() => setShowSendModal(true)}
+                  disabled={quote.lineItems.length === 0}
                 >
                   Send Email
                 </Button>
@@ -179,7 +195,7 @@ export default function QuoteEditorPage() {
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || "Failed to send email");
 
-                    // ✅ Update quote in store immediately
+                    // ✅ Only update status to pending on send
                     updateQuote(quote.id, {
                       status: "pending",
                       shareToken: data.token,
